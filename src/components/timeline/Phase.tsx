@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Clock, Users } from "lucide-react";
+import { ChevronDown, Check, Clock, Users } from "lucide-react";
 import { TaskRow } from "./TaskRow";
 import { assigneeColor } from "@/lib/utils";
 import type { Phase as PhaseType, Task } from "@/types";
@@ -16,6 +16,20 @@ interface PhaseProps {
 
 export function Phase({ phase, allTasks, index, accentColor }: PhaseProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+
+  const toggleTask = useCallback((taskId: string) => {
+    setCompletedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  }, []);
+
+  const completedCount = completedIds.size;
+  const totalCount = phase.tasks.length;
+  const allDone = completedCount === totalCount && totalCount > 0;
 
   return (
     <motion.div
@@ -41,13 +55,34 @@ export function Phase({ phase, allTasks, index, accentColor }: PhaseProps) {
         {/* Phase name */}
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2">
-            <span className="text-xs font-semibold text-zinc-200 truncate">{phase.title}</span>
-            <span
-              className="font-code text-[9px] shrink-0"
-              style={{ color: `${accentColor}99` }}
-            >
-              {phase.tasks.length} tasks
+            <span className={`text-xs font-semibold truncate transition-colors duration-300 ${allDone ? "text-zinc-500" : "text-zinc-200"}`}>
+              {phase.title}
             </span>
+            <AnimatePresence mode="wait">
+              {allDone ? (
+                <motion.span
+                  key="done"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="inline-flex items-center gap-0.5 font-code text-[9px] text-emerald-500 shrink-0"
+                >
+                  <Check className="w-2.5 h-2.5" strokeWidth={2.5} />
+                  done
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="count"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="font-code text-[9px] shrink-0"
+                  style={{ color: `${accentColor}99` }}
+                >
+                  {completedCount > 0 ? `${completedCount}/${totalCount}` : `${totalCount} tasks`}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -127,6 +162,8 @@ export function Phase({ phase, allTasks, index, accentColor }: PhaseProps) {
                 task={task}
                 allTasks={allTasks}
                 index={tIdx}
+                isCompleted={completedIds.has(task.id)}
+                onToggle={() => toggleTask(task.id)}
               />
             ))}
           </motion.div>
