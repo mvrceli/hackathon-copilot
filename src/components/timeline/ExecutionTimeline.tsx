@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { GitFork, Loader2 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { GitFork, AlertOctagon, RotateCcw } from "lucide-react";
+import { AILoadingExperience } from "@/components/loading/AILoadingExperience";
 import { Phase } from "./Phase";
 import { phaseColor } from "@/lib/utils";
 import type { ExecutionPlan } from "@/types";
@@ -10,21 +10,8 @@ import type { ExecutionPlan } from "@/types";
 interface ExecutionTimelineProps {
   plan: ExecutionPlan | null;
   isLoading: boolean;
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="p-5 space-y-4">
-      {[...Array(3)].map((_, i) => (
-        <div key={i} className="space-y-2">
-          <Skeleton className="h-9 w-full bg-white/[0.04]" />
-          <Skeleton className="h-8 w-full bg-white/[0.03]" />
-          <Skeleton className="h-8 w-full bg-white/[0.03]" />
-          <Skeleton className="h-8 w-[85%] bg-white/[0.025]" />
-        </div>
-      ))}
-    </div>
-  );
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 function EmptyState() {
@@ -65,8 +52,38 @@ function EmptyState() {
   );
 }
 
-export function ExecutionTimeline({ plan, isLoading }: ExecutionTimelineProps) {
-  if (isLoading) return <LoadingSkeleton />;
+function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="flex flex-col items-center justify-center h-full min-h-[60vh] gap-4 px-8 text-center select-none"
+    >
+      <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+        <AlertOctagon className="w-7 h-7 text-rose-400" />
+      </div>
+      <div className="space-y-1.5">
+        <p className="text-sm font-semibold text-zinc-300">Generation failed</p>
+        <p className="font-code text-[11px] text-rose-400/80 max-w-[280px] leading-relaxed break-words">
+          {message}
+        </p>
+      </div>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-xs text-zinc-400 hover:text-zinc-200 hover:border-white/[0.14] transition-colors"
+        >
+          <RotateCcw className="w-3 h-3" />
+          Try again
+        </button>
+      )}
+    </motion.div>
+  );
+}
+
+export function ExecutionTimeline({ plan, isLoading, error, onRetry }: ExecutionTimelineProps) {
+  if (isLoading) return <AILoadingExperience />;
+  if (error) return <ErrorState message={error} onRetry={onRetry} />;
   if (!plan) return <EmptyState />;
 
   return (

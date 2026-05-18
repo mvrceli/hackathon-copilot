@@ -9,21 +9,26 @@ function sleep(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
-function stripFences(text: string): string {
+function cleanJson(text: string): string {
   return text
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```\s*$/i, "")
-    .trim();
+    .trim()
+    // Remove trailing commas before ] or }
+    .replace(/,(\s*[}\]])/g, "$1");
 }
 
 function parseAndValidate(raw: string): ExecutionPlan {
-  const cleaned = stripFences(raw);
-  const parsed = JSON.parse(cleaned);
+  const cleaned = cleanJson(raw);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    console.error("[planService] JSON parse failed. First 500 chars:", cleaned.slice(0, 500));
+    throw e;
+  }
   const geminiData = GeminiResponseSchema.parse(parsed);
-
-  // Derive flat tasks array from phases — authoritative source of truth
   const tasks = geminiData.phases.flatMap((phase) => phase.tasks);
-
   return { ...geminiData, tasks } as ExecutionPlan;
 }
 

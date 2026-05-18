@@ -75,14 +75,42 @@ function Section({
 
 function LoadingSkeleton() {
   return (
-    <div className="p-4 space-y-4">
-      {[...Array(4)].map((_, i) => (
-        <div key={i} className="space-y-2">
-          <Skeleton className="h-5 w-32 bg-white/[0.04]" />
-          <Skeleton className="h-16 w-full bg-white/[0.03]" />
-          <Skeleton className="h-16 w-full bg-white/[0.03]" />
-        </div>
-      ))}
+    <div className="flex flex-col h-full">
+      {/* Thinking indicator */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex items-center gap-2.5 px-4 py-3 border-b border-white/[0.04]"
+      >
+        <motion.div
+          className="w-1.5 h-1.5 rounded-full bg-indigo-400"
+          animate={{ opacity: [1, 0.2, 1] }}
+          transition={{ duration: 1.1, repeat: Infinity }}
+        />
+        <span className="font-code text-[10px] text-indigo-400/70">Generating insights…</span>
+      </motion.div>
+
+      <div className="p-3 space-y-3">
+        {[
+          { w: "w-28", items: [20, 16] },
+          { w: "w-24", items: [20, 20, 14] },
+          { w: "w-20", items: [16, 20] },
+        ].map((group, gi) => (
+          <div key={gi} className="space-y-1.5">
+            <Skeleton className={`h-4 ${group.w} bg-white/[0.04]`} />
+            {group.items.map((h, ii) => (
+              <motion.div
+                key={ii}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: gi * 0.12 + ii * 0.07 }}
+              >
+                <Skeleton className={`h-${h} w-full bg-white/[0.025]`} />
+              </motion.div>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

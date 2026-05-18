@@ -9,6 +9,8 @@ export const geminiModel = genAI.getGenerativeModel({
   generationConfig: {
     responseMimeType: "application/json",
     temperature: 0.4,
-    maxOutputTokens: 8192,
+    maxOutputTokens: 32768,
+    // @ts-expect-error — thinkingConfig is supported by gemini-2.5-flash at runtime
+    thinkingConfig: { thinkingBudget: 0 },
   },
 });
