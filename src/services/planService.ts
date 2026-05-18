@@ -1,6 +1,7 @@
 import { geminiModel } from "@/lib/gemini";
 import { GeminiResponseSchema, type PlanRequest } from "@/lib/schema";
 import { buildUserPrompt } from "@/lib/prompt";
+import { MOCK_GEMINI_RESPONSE } from "@/lib/mockPlan";
 import type { ExecutionPlan } from "@/types";
 
 const MAX_RETRIES = 3;
@@ -27,14 +28,28 @@ function parseAndValidate(raw: string): ExecutionPlan {
     console.error("[planService] JSON parse failed. First 500 chars:", cleaned.slice(0, 500));
     throw e;
   }
-  const geminiData = GeminiResponseSchema.parse(parsed);
+  return buildFromGeminiData(GeminiResponseSchema.parse(parsed));
+}
+
+function buildFromGeminiData(geminiData: ReturnType<typeof GeminiResponseSchema.parse>): ExecutionPlan {
   const tasks = geminiData.phases.flatMap((phase) => phase.tasks);
   return { ...geminiData, tasks } as ExecutionPlan;
 }
 
+function isMockFallback(): ExecutionPlan {
+  console.log("[planService] Returning demo mock plan");
+  return buildFromGeminiData(GeminiResponseSchema.parse(MOCK_GEMINI_RESPONSE));
+}
+
+function isInvalidKeyError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes("API_KEY_INVALID") || msg.includes("API key not valid");
+}
+
 export async function generatePlan(request: PlanRequest): Promise<ExecutionPlan> {
   if (!process.env.GOOGLE_API_KEY) {
-    throw new Error("GOOGLE_API_KEY is not configured on the server");
+    console.log("[planService] No GOOGLE_API_KEY set — using mock plan");
+    return isMockFallback();
   }
 
   const userPrompt = buildUserPrompt(request);
@@ -48,6 +63,12 @@ export async function generatePlan(request: PlanRequest): Promise<ExecutionPlan>
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
       console.error(`[planService] Attempt ${attempt}/${MAX_RETRIES} failed:`, lastError.message);
+
+      if (isInvalidKeyError(err)) {
+        console.log("[planService] Invalid API key detected — using mock plan");
+        return isMockFallback();
+      }
+
       if (attempt < MAX_RETRIES) {
         await sleep(600 * attempt);
       }
