@@ -4,11 +4,15 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LeftSidebar } from "./LeftSidebar";
 import { ExecutionTimeline } from "@/components/timeline/ExecutionTimeline";
+import { TimeAnalysisView } from "@/components/timeline/TimeAnalysisView";
 import { InsightsPanel } from "@/components/insights/InsightsPanel";
 import type { ExecutionPlan, FormData } from "@/types";
 
+type CenterTab = "timeline" | "analysis";
+
 export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [centerTab, setCenterTab] = useState<CenterTab>("timeline");
   const [plan, setPlan] = useState<ExecutionPlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,9 +66,22 @@ export function AppShell() {
       {/* CENTER — execution timeline */}
       <main className="flex-1 min-w-0 flex flex-col overflow-hidden border-x border-white/[0.06] dot-grid">
         <div className="flex items-center gap-3 px-5 py-3 border-b border-white/[0.06] shrink-0">
-          <span className="font-code text-[10px] uppercase tracking-widest text-zinc-500">
-            Execution Timeline
-          </span>
+          {/* Tab switcher */}
+          <div className="flex items-center gap-0.5 rounded bg-white/[0.03] border border-white/[0.06] p-0.5">
+            {(["timeline", "analysis"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setCenterTab(tab)}
+                className={`px-2.5 py-1 rounded font-code text-[10px] transition-colors ${
+                  centerTab === tab
+                    ? "bg-white/[0.08] text-zinc-200"
+                    : "text-zinc-600 hover:text-zinc-400"
+                }`}
+              >
+                {tab === "timeline" ? "Timeline" : "Analysis"}
+              </button>
+            ))}
+          </div>
 
           <AnimatePresence mode="wait">
             {isLoading && (
@@ -98,12 +115,16 @@ export function AppShell() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <ExecutionTimeline
-            plan={plan}
-            isLoading={isLoading}
-            error={error}
-            onRetry={handleRetry}
-          />
+          {centerTab === "timeline" || !plan ? (
+            <ExecutionTimeline
+              plan={plan}
+              isLoading={isLoading}
+              error={error}
+              onRetry={handleRetry}
+            />
+          ) : (
+            <TimeAnalysisView plan={plan} />
+          )}
         </div>
       </main>
 
