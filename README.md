@@ -45,7 +45,7 @@ The mock plan follows the exact same Zod schema as real responses — it passes 
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 15 (App Router) |
+| Framework | Next.js 16 (App Router) |
 | Language | TypeScript |
 | Styling | Tailwind CSS v4 |
 | Components | shadcn/ui |
