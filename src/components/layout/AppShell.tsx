@@ -10,12 +10,27 @@ export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [plan, setPlan] = useState<ExecutionPlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(data: FormData) {
+  async function handleSubmit(data: FormData) {
     setIsLoading(true);
-    console.log("Form data:", data);
-    // Backend not yet connected — plan remains null
-    setTimeout(() => setIsLoading(false), 800);
+    setError(null);
+    try {
+      const res = await fetch("/api/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error ?? `Server error ${res.status}`);
+      }
+      setPlan(json);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -51,6 +66,11 @@ export function AppShell() {
             </span>
           )}
         </div>
+        {error && (
+          <div className="mx-5 mt-4 px-4 py-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-code shrink-0">
+            {error}
+          </div>
+        )}
         <div className="flex-1 overflow-y-auto">
           <ExecutionTimeline plan={plan} isLoading={isLoading} />
         </div>
